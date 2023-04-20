@@ -21,6 +21,12 @@ public class TimersStorage
         if (isEnabled) StartTimer(id);
     }
 
+    public TimersStorage(
+        bool isEnabled,
+        TimerIntervals interval,
+        Action<object?, EventArgs> onTick
+    ) : this(new Random().NextInt64(), isEnabled, interval, onTick) { }
+
     public static void StartTimer(long id)
     {
         if (!Timers[id].Enabled) Timers[id].Enabled = true;
