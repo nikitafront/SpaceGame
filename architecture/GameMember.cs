@@ -34,15 +34,23 @@ public abstract class GameMember
     }
 
 
-    public abstract void Move();
+    public abstract void Move(Control.ControlCollection controls);
 
     public abstract void Shoot(Control.ControlCollection controls);
 
-    public abstract void FlyBullets(Control.ControlCollection controls);
+    public abstract void FlyBullets(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies);
 
     protected GameMember(PictureBox pictureBox) { PictureBox = pictureBox; }
 
     public bool IsCrossing(PictureBox other)
-        => other.Left <= PictureBox.Right && other.Left >= PictureBox.Left
-             && other.Top >= PictureBox.Top && other.Top <= PictureBox.Bottom;
+        => !(other.Left > PictureBox.Left + PictureBox.Width 
+             || PictureBox.Left > other.Left + other.Width 
+             || other.Top > PictureBox.Top + PictureBox.Height 
+             || PictureBox.Top > other.Top + other.Height);
+    
+    public bool IsCrossing(GameMember other)
+        => IsCrossing(other.PictureBox);
+
+    public bool IsCrossing(List<GameMember> members)
+        => members.Any(m => IsCrossing(m.PictureBox));
 }

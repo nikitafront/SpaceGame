@@ -18,16 +18,20 @@ public class Game
 
     #region Constants
     public const long MovingInterval = 200;
+    
     public const int EasyEnemySpeed = 10;
-    public const int MiddleEnemySpeed = 7;
-    public const int HardEnemySpeed = 5;
-    public const int BossMovingSpeed = 2;
-    public const long ShootInterval = 600;
-    public const long BulletSpeed = 100;
     public const long EasyEnemySpawnInterval = 8_000;
+    public const long EasyEnemyShootInterval = 4_000;
+    
+    public const int MiddleEnemySpeed = 7;
     public const long MiddleEnemySpawnInterval = 16_000;
-    public const long HardEnemySpawnInterval = 40_000;
+    
+    
+    public const int BossMovingSpeed = 2;
     public const long BossSpawnInterval = 120_000;
+    
+    public const long PlayerShootInterval = 600;
+    public const int BulletSpeed = 20;
     #endregion
 
     public Game()
@@ -41,25 +45,48 @@ public class Game
         AllEnemies = new() { EasyEnemies, MiddleEnemies, HardEnemies, Bosses };
     }
 
-    private void ReDraw(object? sender, EventArgs args)
+    private async void ReDraw(object? sender, EventArgs args)
     {
         if (PassedMilliseconds % MovingInterval == 0)
         {
             Player.Move();
-            AllEnemies.ForEach(l => l.ForEach(i => i.Move()));
+            AllEnemies.ForEach(l => l.ForEach(i => i.Move(Controls)));
         }
         
-        if (PassedMilliseconds % ShootInterval == 0) Player.Shoot(Controls);
-        if (PassedMilliseconds % BulletSpeed == 0) Player.FlyBullets(Controls);
-        if (PassedMilliseconds % EasyEnemySpawnInterval == 0) SpawnEnemy();
-    }
+        if (PassedMilliseconds % PlayerShootInterval == 0) Player.Shoot(Controls);
+        
+        if (PassedMilliseconds % EasyEnemyShootInterval == 0) 
+            AllEnemies
+                .SelectMany(x => x)
+                .Where(x => x.Type == GameMemberTypes.EasyEnemy)
+                .ToList()
+                .ForEach(e => e.Shoot(Controls));
 
-    private void SpawnEnemy()
+        if (PassedMilliseconds % BulletSpeed == 0)
+        {
+            Player.FlyBullets(Controls, AllEnemies);
+            AllEnemies.ForEach(l => l.ForEach(e => e.FlyBullets(Controls)));
+        }
+
+        if (PassedMilliseconds % EasyEnemySpawnInterval == 0)
+        {
+            var newEnemy = await SpawnEasyEnemy();
+            lock (EasyEnemies) EasyEnemies.Add(newEnemy);
+            Controls.Add(newEnemy.PictureBox);
+        }
+    }
+    private Task<EnemyModel> SpawnEasyEnemy() //TODO rebuild for abstract enemy (fabric)
     {
-        var newEnemyLocation = new Point(new Random().Next(0, new MainForm().Size.Width - GameMember.EasyEnemySize.Width), -GameMember.EasyEnemySize.Height);
-        var newEnemy = new EnemyModel(newEnemyLocation, GameMember.EasyEnemySize,
-            Image.FromFile(MainForm.PathToAssets + "enemy1.png"));
-        EasyEnemies.Add(newEnemy);
-        Controls.Add(newEnemy.PictureBox);
+        var task = new Task<EnemyModel>(() =>
+        {
+            var newEnemyLocation =
+                new Point(new Random().Next(0, new MainForm().Size.Width - GameMember.EasyEnemySize.Width),
+                    -GameMember.EasyEnemySize.Height);
+            var newEnemy = new EnemyModel(newEnemyLocation, GameMember.EasyEnemySize,
+                Image.FromFile(MainForm.PathToAssets + "enemy1.png"), GameMemberTypes.EasyEnemy);
+            return newEnemy;
+        });
+        task.Start();
+        return task;
     }
 }

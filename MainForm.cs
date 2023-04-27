@@ -5,11 +5,14 @@ namespace SpaceGame;
 public partial class MainForm : Form
 {
     public static readonly string PathToAssets = Path.GetFullPath("..\\..\\..\\assets\\");
-    
+
+    public static Form GetMainForm { get; set; } 
     private readonly Random rnd = new();
 
     public MainForm()
     {
+        GetMainForm = this;
+        
         var game = new Game
         {
             Controls = Controls
@@ -49,20 +52,16 @@ public partial class MainForm : Form
             switch (args.KeyCode)
             {
                 case Keys.Up:
-                    game.Player.TempLocation.Y = game.Player.Location.Y <= 0 ? 0 : -offsetValue;
+                    game.Player.AppendTempLocation(new (0, -offsetValue));
                     break;
                 case Keys.Down:
-                    game.Player.TempLocation.Y = game.Player.Location.Y + GameMember.PlayerSize.Height >= Size.Height
-                        ? 0
-                        : offsetValue;
+                    game.Player.AppendTempLocation(new (0, offsetValue));
                     break;
                 case Keys.Left:
-                    game.Player.TempLocation.X = game.Player.Location.X <= 0 ? 0 : -offsetValue;
+                    game.Player.AppendTempLocation(new (-offsetValue, 0));
                     break;
                 case Keys.Right:
-                    game.Player.TempLocation.X = game.Player.Location.X + GameMember.PlayerSize.Width >= Size.Width
-                        ? 0
-                        : offsetValue;
+                    game.Player.AppendTempLocation(new (offsetValue, 0));
                     break;
             }
         };

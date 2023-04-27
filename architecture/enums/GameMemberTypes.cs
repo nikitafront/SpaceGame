@@ -4,7 +4,9 @@ public enum GameMemberTypes
 {
     Incorrect = -1,
     Player, 
-    Enemy, 
+    EasyEnemy, 
+    MiddleEnemy, 
+    HardEnemy, 
     Boss,
     Bullet
 }
