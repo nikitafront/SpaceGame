@@ -7,7 +7,11 @@ public abstract class GameMember
     public static readonly Size MiddleEnemySize = new (100, 100);
     public static readonly Size HardEnemySize = new (120, 120);
     public static readonly Size BossSize = new (200, 200);
-    public Point Location { get => PictureBox.Location; set => PictureBox.Location = value; }
+    
+    public Point TempLocation = Point.Empty;
+    public Point Location { get; set; }
+    public Size Size { get; set; }
+    public Image Image { get; set; }
     public PictureBox PictureBox { get; set; }
     internal readonly List<PictureBox> bullets = new ();
 
@@ -16,15 +20,26 @@ public abstract class GameMember
         Size size,
         Image sprite)
     {
-        PictureBox = new PictureBox()
+        Location = location;
+        Size = size;
+        Image = sprite;
+
+        PictureBox = new PictureBox
         {
             Location = location,
-            Image = sprite,
             Size = size,
-            BackColor = Color.Transparent
+            Image = sprite,
+            // BackColor = Color.Transparent
         };
     }
-    
+
+
+    public abstract void Move();
+
+    public abstract void Shoot(Control.ControlCollection controls);
+
+    public abstract void FlyBullets(Control.ControlCollection controls);
+
     protected GameMember(PictureBox pictureBox) { PictureBox = pictureBox; }
 
     public bool IsCrossing(PictureBox other)
