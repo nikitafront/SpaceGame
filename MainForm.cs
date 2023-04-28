@@ -5,7 +5,8 @@ namespace SpaceGame;
 public partial class MainForm : Form
 {
     public static readonly string PathToAssets = Path.GetFullPath("..\\..\\..\\assets\\");
-
+    public static Size MainFormSize { get; } = new Size(1240, 720);
+    public static Size MenuButtonSize { get; } = new Size(180, 60);
     public static Form GetMainForm { get; set; } 
     private readonly Random rnd = new();
 
@@ -22,7 +23,7 @@ public partial class MainForm : Form
 
         {
             Text = "SpaceGame";
-            Size = new Size(1240, 720);
+            Size = MainFormSize;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             BackgroundImage =
@@ -34,8 +35,8 @@ public partial class MainForm : Form
         #region PlayerState
 
         game.Player = new PlayerModel(
-            new Point(ClientSize.Width / 2, ClientSize.Height - GameMember.PlayerSize.Height),
-            GameMember.PlayerSize,
+            new Point(ClientSize.Width / 2, ClientSize.Height - GameObject.PlayerSize.Height),
+            GameObject.PlayerSize,
             Image.FromFile(Path.GetFullPath(PathToAssets + "player.png"))
         );
         

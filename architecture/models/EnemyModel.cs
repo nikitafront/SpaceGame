@@ -1,15 +1,16 @@
 ﻿using SpaceGame.architecture;
+using SpaceGame.architecture.interfaces;
 
 namespace SpaceGame;
 
-public class EnemyModel : GameMember
+public class EnemyModel : GameObject, IGameMember
 {
     public GameMemberTypes Type { get; }
 
     public EnemyModel(Point location, Size size, Image sprite, GameMemberTypes type) : base(location, size, sprite) {Type = type;}
     public EnemyModel(PictureBox pictureBox) : base(pictureBox) {}
 
-    public override void Shoot(Control.ControlCollection controls)
+    public void Shoot(Control.ControlCollection controls)
     {
         var enemyHorizontalCenter = PictureBox.Location.X + PictureBox.Size.Width / 2;
         var newBullet = new PictureBox
@@ -22,8 +23,7 @@ public class EnemyModel : GameMember
         bullets.Add(newBullet);
         controls.Add(newBullet);
     }
-
-    public override void FlyBullets(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies = null)
+    public void FlyBullets(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies = null, List<BonusModel> bonuses = null)
     {
         var toRemove = new List<PictureBox>();
         
@@ -49,5 +49,20 @@ public class EnemyModel : GameMember
             return;
         } 
         PictureBox.Location = Location;
+    }
+
+    public void Die(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies, List<BonusModel> bonuses) {
+        controls.Remove(PictureBox);
+        bullets.ForEach(controls.Remove);
+        allEnemies.Any(l => l.Remove(this));
+
+        var rndInt = new Random().Next(0, 100);
+        const int dropChance = 0;
+        if (rndInt >= dropChance)
+        {
+            var bonus = new BonusModel(Location, Size, System.Drawing.Image.FromFile(MainForm.PathToAssets + "bonus.png"));
+            controls.Add(bonus.PictureBox);
+            bonuses.Add(bonus);
+        }
     }
 }
