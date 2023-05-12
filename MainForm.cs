@@ -14,10 +14,7 @@ public partial class MainForm : Form
     {
         GetMainForm = this;
         
-        var game = new Game
-        {
-            Controls = Controls
-        };
+        var game = new Game { Controls = Controls };
 
         #region WindowState
 
@@ -40,7 +37,6 @@ public partial class MainForm : Form
             Image.FromFile(Path.GetFullPath(PathToAssets + "player.png"))
         );
         
-
         Controls.Add(game.Player.PictureBox);
 
         #endregion

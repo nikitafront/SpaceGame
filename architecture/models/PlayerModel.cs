@@ -6,7 +6,9 @@ namespace SpaceGame;
 public class PlayerModel : GameObject, IGameMember
 {
     public Point TempLocation = Point.Empty;
-    
+    public int LifeCount = 1;
+    public int BlinkCounter = 10;
+
     public PlayerModel(Point location, Size size, Image sprite) : base(location, size, sprite)
     {
     }
@@ -17,7 +19,7 @@ public class PlayerModel : GameObject, IGameMember
         var newBullet = new PictureBox
         {
             Location = PictureBox.Location with { X = playerHorizontalCenter },
-            Size = new Size(4, 8),
+            Size = BulletSize,
             Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + "bullet.png"))
         };
 
@@ -25,14 +27,15 @@ public class PlayerModel : GameObject, IGameMember
         controls.Add(newBullet);
     }
 
-    public void FlyBullets(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies, List<BonusModel> bonuses)
+    public void FlyBullets(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies,
+        List<BonusModel> bonuses)
     {
         var toRemove = new List<PictureBox>();
 
         for (int i = 0; i < bullets.Count; i++)
         {
             var currenBullet = bullets[i];
-            
+
             currenBullet.Location = currenBullet.Location with { Y = currenBullet.Location.Y - Game.BulletSpeed };
 
             if (currenBullet.Location.Y < -10)
@@ -60,13 +63,54 @@ public class PlayerModel : GameObject, IGameMember
         }
     }
 
-    public void Die(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies, List<BonusModel> bonuses = null) { throw new NotImplementedException(); }
+    public void Die(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies = null,
+        List<BonusModel> bonuses = null)
+    {
+        LifeCount--;
 
-    public override void Move(Control.ControlCollection controls = null)
+        Location = new Point(
+            MainForm.GetMainForm.ClientSize.Width / 2,
+            MainForm.GetMainForm.ClientSize.Height - PlayerSize.Height
+        );
+    }
+
+
+    public override void Move(Control.ControlCollection controls)
     {
         Location = new Point(Location.X + TempLocation.X, Location.Y + TempLocation.Y);
         TempLocation = Point.Empty;
         PictureBox.Location = Location;
+    }
+
+    public void Move(Control.ControlCollection controls, List<BonusModel> bonuses)
+    {
+        if (LifeCount <= 0)
+        {
+            Game.GetCurrentGame.GameOver(controls);
+            return;
+        }
+        
+        Move(controls);
+
+        for (int i = 0; i < bonuses.Count; i++)
+        {
+            if (IsCrossing(bonuses[i]))
+            {
+                BlinkCounter = 0;
+                controls.Remove(bonuses[i].PictureBox);
+                bonuses.Remove(bonuses[i]);
+                Die(controls);
+            }
+        }
+        
+
+        if (BlinkCounter < 10) Blink();
+    }
+
+    private void Blink()
+    {
+        PictureBox.Visible = !PictureBox.Visible;
+        BlinkCounter++;
     }
 
     public void AppendTempLocation(Point temp)

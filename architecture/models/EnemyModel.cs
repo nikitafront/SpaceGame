@@ -60,7 +60,7 @@ public class EnemyModel : GameObject, IGameMember
         const int dropChance = 0;
         if (rndInt >= dropChance)
         {
-            var bonus = new BonusModel(Location, Size, System.Drawing.Image.FromFile(MainForm.PathToAssets + "bonus.png"));
+            var bonus = new BonusModel(Location, BonusSize, Image.FromFile(MainForm.PathToAssets + "bonus.png"));
             controls.Add(bonus.PictureBox);
             bonuses.Add(bonus);
         }
