@@ -6,7 +6,7 @@ namespace SpaceGame;
 public class PlayerModel : GameObject, IGameMember
 {
     public Point TempLocation = Point.Empty;
-    public int LifeCount = 1;
+    public int LifeCount = 3;
     public int BlinkCounter = 10;
 
     public PlayerModel(Point location, Size size, Image sprite) : base(location, size, sprite)
@@ -82,29 +82,36 @@ public class PlayerModel : GameObject, IGameMember
         PictureBox.Location = Location;
     }
 
-    public void Move(Control.ControlCollection controls, List<BonusModel> bonuses)
+    public bool Move(Control.ControlCollection controls, List<BonusModel> bonuses)
     {
-        if (LifeCount <= 0)
-        {
-            Game.GetCurrentGame.GameOver(controls);
-            return;
-        }
-        
+        if (LifeCount <= 0) return Game.GetCurrentGame.GameOver(controls);
+
         Move(controls);
 
         for (int i = 0; i < bonuses.Count; i++)
         {
             if (IsCrossing(bonuses[i]))
             {
-                BlinkCounter = 0;
                 controls.Remove(bonuses[i].PictureBox);
                 bonuses.Remove(bonuses[i]);
-                Die(controls);
+                LifeCount++;
             }
         }
-        
+
+        if (Game
+            .AllEnemies
+            .SelectMany(e => e)
+            .SelectMany(e => e.bullets)
+            .Any(IsCrossing))
+        {
+            BlinkCounter = 0;
+            controls.Remove(Game.PlayerLifes.Last());
+            Game.PlayerLifes.Remove(Game.PlayerLifes.Last());
+            Die(controls);
+        }
 
         if (BlinkCounter < 10) Blink();
+        return false;
     }
 
     private void Blink()

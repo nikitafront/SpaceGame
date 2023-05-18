@@ -14,7 +14,7 @@ public abstract class GameObject
     public Size Size { get; set; }
     public Image Image { get; set; }
     public PictureBox PictureBox { get; set; }
-    internal readonly List<PictureBox> bullets = new ();
+    public readonly List<PictureBox> bullets = new ();
 
     protected GameObject(
         Point location,

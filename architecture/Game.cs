@@ -4,8 +4,6 @@ namespace SpaceGame.architecture;
 
 public class Game
 {
-    public Timer Timer { get; private set; }
-    private bool IsTimerWasRemoved = false;
     public static Game GetCurrentGame { get; private set; }
     private static long PassedMilliseconds { get; set; }
     public PlayerModel Player { get; set; }
@@ -41,59 +39,46 @@ public class Game
 
     public Game()
     {
-        Timer = new Timer { Enabled = true, Interval = 100 };
         GetCurrentGame = this;
-        Timer.Tick += (o, e) =>
+        if (Variables.Timer == null)
         {
-            PassedMilliseconds += 100;
-            ReDraw(o, e);
-        };
+            Variables.Timer = new Timer { Enabled = true, Interval = 100 };
+            Variables.Timer.Tick += (o, e) =>
+            {
+                PassedMilliseconds += 100;
+                ReDraw(o, e);
+            };
+        }
+
         AllEnemies = new() { EasyEnemies, MiddleEnemies, HardEnemies, Bosses };
         MainForm.GetMainForm.KeyDown += (_, args) =>
         {
-            if (args.KeyCode == Keys.Escape) MoveToPauseMenu(Timer);
+            if (args.KeyCode == Keys.Escape) MoveToPauseMenu(Variables.Timer);
         };
     }
 
     private async void ReDraw(object? sender, EventArgs args)
     {
-        #region initial draw
-        
         if (PassedMilliseconds == 100)
-        {
-            for (int i = 0; i < Player.LifeCount; i++)
-            {
-                var life =
-                    new PictureBox
-                    {
-                        Location = new Point(10 + 45 * i, 10),
-                        Size = GameObject.HeartSize,
-                        BackColor = Color.Transparent,
-                        Image = Image.FromFile(MainForm.PathToAssets + "life.png")
-                    };
-
-                Controls.Add(life);
-                PlayerLifes.Add(life);
-            }
-        }
-        #endregion
+            for (int i = 0; i < Player.LifeCount; i++) AddLife(i);
 
         if (PassedMilliseconds % MovingInterval == 0)
         {
-            Player.Move(Controls, Bonuses);
-            if (IsTimerWasRemoved) return;
+            if (Player.Move(Controls, Bonuses)) return;
+            
             AllEnemies.ForEach(l => l.ForEach(i => i.Move(Controls)));
 
-            if (PlayerLifes.Count != Player.LifeCount && PlayerLifes.Count > 0)
+            if (PlayerLifes.Count > Player.LifeCount)
             {
                 Controls.Remove(PlayerLifes.Last());
                 PlayerLifes.Remove(PlayerLifes.Last());
             }
+            if (PlayerLifes.Count < Player.LifeCount)
+            {
+                AddLife(Player.LifeCount - 1);
+            }
         }
 
-        #region MyRegion
-
-        
         if (PassedMilliseconds % PlayerShootInterval == 0) Player.Shoot(Controls);
 
         if (PassedMilliseconds % EasyEnemyShootInterval == 0)
@@ -117,11 +102,7 @@ public class Game
             lock (EasyEnemies) EasyEnemies.Add(newEnemy);
             Controls.Add(newEnemy.PictureBox);
         }
-
-        #endregion
     }
-
-    #region MyRegion
 
     
     private Task<EnemyModel> SpawnEasyEnemy() //TODO rebuild for abstract enemy (fabric)
@@ -167,7 +148,7 @@ public class Game
             buttonResume.Click += (_, _) =>
             {
                 MenuPauseControls.ForEach(c => Controls.Remove(c));
-                Timer.Start();
+                Variables.Timer.Start();
             };
 
             var buttonExit = new Button
@@ -209,30 +190,37 @@ public class Game
             MenuPauseControls.ForEach(c => Controls.Remove(c));
         }
     }
-
-
-    #endregion
     
-    public void GameOver(Control.ControlCollection controls)
+    public bool GameOver(Control.ControlCollection controls)
     {
-        IsTimerWasRemoved = true;
-        controls.Clear();
-        controls.AddRange(new Control[]
+        Variables.Timer.Stop();
+        
+        var gameOverPicture = new PictureBox
         {
+            Location = new Point(0, 0),
+            Size = MainForm.MainFormSize,
+            Image = Image.FromFile(MainForm.PathToAssets + "gameOver.png"),
+            BackColor = Color.Transparent
+        };
+        gameOverPicture.Click += (sender, args) => Application.Exit();
+
+        controls.Clear();
+        controls.Add(gameOverPicture);
+        return true;
+    }
+
+    private void AddLife(int position)
+    {
+        var life =
             new PictureBox
             {
-                Location = new Point(0, 0),
-                Size = MainForm.MainFormSize,
-                Image = Image.FromFile(MainForm.PathToAssets + "pauseBlackout.png"),
-                BackColor = Color.Transparent
-            },
-            new PictureBox
-            {
-                Location = new Point(0, 0),
-                Size = MainForm.MainFormSize,
-                Image = Image.FromFile(MainForm.PathToAssets + "gameOver.png"),
-                BackColor = Color.Transparent
-            }
-        });
+                Location = new Point(10 + 45 * position, 10),
+                Size = GameObject.HeartSize,
+                BackColor = Color.Transparent,
+                Image = Image.FromFile(MainForm.PathToAssets + "life.png")
+            };
+
+        Controls.Add(life);
+        PlayerLifes.Add(life);
     }
 }
