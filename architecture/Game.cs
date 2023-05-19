@@ -1,4 +1,6 @@
-﻿using Timer = System.Windows.Forms.Timer;
+﻿using System.ComponentModel;
+using System.Globalization;
+using Timer = System.Windows.Forms.Timer;
 
 namespace SpaceGame.architecture;
 
@@ -16,24 +18,30 @@ public class Game
     public static List<Control> PlayerLifes { get; set; } = new();
     public static List<Control> MenuPauseControls { get; set; } = new();
     public Control.ControlCollection Controls { get; set; }
+    public static long Score { get; set; }
 
     #region Constants
-
-    public const long MovingInterval = 200;
-
+    
     public const int EasyEnemySpeed = 10;
     public const long EasyEnemySpawnInterval = 8_000;
-    public const long EasyEnemyShootInterval = 4_000;
+    public const long EasyEnemyShootInterval = 2_000;
 
     public const int MiddleEnemySpeed = 7;
-    public const int BonusSpeed = 5;
-    public const long MiddleEnemySpawnInterval = 16_000;
-
-    public const int BossMovingSpeed = 2;
-    public const long BossSpawnInterval = 120_000;
+    public const long MiddleEnemySpawnInterval = 10_000;
+    public const long MiddleEnemyShootInterval = 4_000;
+    
+    public const int HardEnemySpeed = 5;
+    public const long HardEnemySpawnInterval = 12_000;
+    public const long HardEnemyShootInterval = 8_000;
+    
+    public const int BossSpeed = 2;
+    public const long BossSpawnInterval = 14_000;
+    public const long BossShootInterval = 6_000;
 
     public const long PlayerShootInterval = 600;
     public const int BulletSpeed = 20;
+    public const int BonusSpeed = 5;
+    public const long MovingInterval = 200;
 
     #endregion
 
@@ -60,26 +68,39 @@ public class Game
     private async void ReDraw(object? sender, EventArgs args)
     {
         if (PassedMilliseconds == 100)
-            for (int i = 0; i < Player.LifeCount; i++) AddLife(i);
+            for (int i = 0; i < Player.LifeCount; i++)
+                AddLife(i);
 
         if (PassedMilliseconds % MovingInterval == 0)
         {
+            ChangeScoreText();
+
             if (Player.Move(Controls, Bonuses)) return;
-            
-            AllEnemies.ForEach(l => l.ForEach(i => i.Move(Controls)));
 
             if (PlayerLifes.Count > Player.LifeCount)
             {
                 Controls.Remove(PlayerLifes.Last());
                 PlayerLifes.Remove(PlayerLifes.Last());
             }
+
             if (PlayerLifes.Count < Player.LifeCount)
             {
                 AddLife(Player.LifeCount - 1);
             }
         }
 
+        #region DRY
+
+        if (PassedMilliseconds % EasyEnemySpeed * 10 == 0) EasyEnemies.ForEach(e => e.Move(Controls));
+        if (PassedMilliseconds % MiddleEnemySpeed * 10 == 0) MiddleEnemies.ForEach(e => e.Move(Controls));
+        if (PassedMilliseconds % HardEnemySpeed * 10 == 0) HardEnemies.ForEach(e => e.Move(Controls));
+        if (PassedMilliseconds % BossSpeed * 10 == 0) Bosses.ForEach(e => e.Move(Controls));
+
+        #endregion
+
         if (PassedMilliseconds % PlayerShootInterval == 0) Player.Shoot(Controls);
+
+        #region DRY
 
         if (PassedMilliseconds % EasyEnemyShootInterval == 0)
             AllEnemies
@@ -87,7 +108,30 @@ public class Game
                 .Where(x => x.Type == GameMemberTypes.EasyEnemy)
                 .ToList()
                 .ForEach(e => e.Shoot(Controls));
+        
+        if (PassedMilliseconds % MiddleEnemyShootInterval == 0)
+            AllEnemies
+                .SelectMany(x => x)
+                .Where(x => x.Type == GameMemberTypes.MiddleEnemy)
+                .ToList()
+                .ForEach(e => e.Shoot(Controls));
+        
+        if (PassedMilliseconds % HardEnemyShootInterval == 0)
+            AllEnemies
+                .SelectMany(x => x)
+                .Where(x => x.Type == GameMemberTypes.HardEnemy)
+                .ToList()
+                .ForEach(e => e.Shoot(Controls));
+        
+        if (PassedMilliseconds % BossShootInterval == 0)
+            AllEnemies
+                .SelectMany(x => x)
+                .Where(x => x.Type == GameMemberTypes.Boss)
+                .ToList()
+                .ForEach(e => e.Shoot(Controls));
 
+        #endregion
+        
         if (PassedMilliseconds % BulletSpeed == 0)
         {
             Player.FlyBullets(Controls, AllEnemies, Bonuses);
@@ -96,24 +140,55 @@ public class Game
 
         if (PassedMilliseconds % BonusSpeed == 0) Bonuses.ForEach(b => b.Move(Controls));
 
+        #region DRY
+
         if (PassedMilliseconds % EasyEnemySpawnInterval == 0)
         {
-            var newEnemy = await SpawnEasyEnemy();
-            lock (EasyEnemies) EasyEnemies.Add(newEnemy);
+            var newEnemy = await SpawnEnemy(GameObject.EasyEnemySize, GameMemberTypes.EasyEnemy);
+            EasyEnemies.Add(newEnemy);
             Controls.Add(newEnemy.PictureBox);
         }
+        
+        if (PassedMilliseconds % MiddleEnemySpawnInterval == 0)
+        {
+            var newEnemy = await SpawnEnemy(GameObject.MiddleEnemySize, GameMemberTypes.MiddleEnemy);
+            EasyEnemies.Add(newEnemy);
+            Controls.Add(newEnemy.PictureBox);
+        }
+        
+        if (PassedMilliseconds % HardEnemySpawnInterval == 0)
+        {
+            var newEnemy = await SpawnEnemy(GameObject.MiddleEnemySize, GameMemberTypes.MiddleEnemy);
+            EasyEnemies.Add(newEnemy);
+            Controls.Add(newEnemy.PictureBox);
+        }
+        
+        if (PassedMilliseconds % BossSpawnInterval == 0)
+        {
+            var newEnemy = await SpawnEnemy(GameObject.BossSize, GameMemberTypes.Boss);
+            EasyEnemies.Add(newEnemy);
+            Controls.Add(newEnemy.PictureBox);
+        }
+        
+        #endregion
     }
 
+    private void ChangeScoreText()
+    {
+        var bestScore = File.ReadAllText(MainForm.PathToAssets + "bestPlayerResult.txt");
+        var template = $"Current score: {Score}\nBest score: {bestScore}";
+        Controls.Find("ScoreText", true)[0].Text = template;
+    }
     
-    private Task<EnemyModel> SpawnEasyEnemy() //TODO rebuild for abstract enemy (fabric)
+    private Task<EnemyModel> SpawnEnemy(Size enemySize, GameMemberTypes enemyType)
     {
         var task = new Task<EnemyModel>(() =>
         {
             var newEnemyLocation =
-                new Point(new Random().Next(0, new MainForm().Size.Width - GameObject.EasyEnemySize.Width),
-                    -GameObject.EasyEnemySize.Height);
-            var newEnemy = new EnemyModel(newEnemyLocation, GameObject.EasyEnemySize,
-                Image.FromFile(MainForm.PathToAssets + "enemy1.png"), GameMemberTypes.EasyEnemy);
+                new Point(new Random().Next(0, new MainForm().Size.Width - enemySize.Width),
+                    -enemySize.Height);
+            var newEnemy = new EnemyModel(newEnemyLocation, enemySize,
+                Image.FromFile(MainForm.PathToAssets + $"enemy{(int)enemyType}.png"), enemyType);
             return newEnemy;
         });
         task.Start();
@@ -190,11 +265,17 @@ public class Game
             MenuPauseControls.ForEach(c => Controls.Remove(c));
         }
     }
-    
+
     public bool GameOver(Control.ControlCollection controls)
     {
-        Variables.Timer.Stop();
-        
+        var bestResult = long.Parse(File.ReadAllText(MainForm.PathToAssets + "bestPlayerResult.txt"));
+        File.WriteAllText(
+            MainForm.PathToAssets + "bestPlayerResult.txt",
+            Math.Max(Score, bestResult).ToString()
+        );
+
+        Variables.Timer?.Stop();
+
         var gameOverPicture = new PictureBox
         {
             Location = new Point(0, 0),
@@ -206,6 +287,8 @@ public class Game
 
         controls.Clear();
         controls.Add(gameOverPicture);
+
+
         return true;
     }
 
@@ -214,7 +297,7 @@ public class Game
         var life =
             new PictureBox
             {
-                Location = new Point(10 + 45 * position, 10),
+                Location = new Point(10 + 45 * (position % 10), 35 * (position / 10)),
                 Size = GameObject.HeartSize,
                 BackColor = Color.Transparent,
                 Image = Image.FromFile(MainForm.PathToAssets + "life.png")

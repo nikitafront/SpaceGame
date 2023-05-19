@@ -7,7 +7,8 @@ public partial class MainForm : Form
     public static readonly string PathToAssets = Path.GetFullPath("..\\..\\..\\assets\\");
     public static Size MainFormSize { get; } = new Size(1240, 720);
     public static Size MenuButtonSize { get; } = new Size(180, 60);
-    public static Form GetMainForm { get; set; } 
+    public static Form GetMainForm { get; set; }
+    public Label ScoreText { get; set; } 
     private readonly Random rnd = new();
 
     public MainForm()
@@ -62,6 +63,19 @@ public partial class MainForm : Form
                     break;
             }
         };
+
+        ScoreText = new Label
+        {
+            Name = "ScoreText",
+            Size = new Size(500, 80),
+            Location = new Point(0, Size.Height - 100),
+            Text = "Current score:\nBest result:",
+            Font = new Font(new FontFamily("ArcadeClassic"), 22),
+            BackColor = Color.Transparent,
+            ForeColor = Color.DarkRed 
+        };
+        
+        Controls.Add(ScoreText);
 
         #endregion
     }

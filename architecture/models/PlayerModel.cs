@@ -6,11 +6,13 @@ namespace SpaceGame;
 public class PlayerModel : GameObject, IGameMember
 {
     public Point TempLocation = Point.Empty;
-    public int LifeCount = 3;
+    public int LifeCount = 100;
     public int BlinkCounter = 10;
 
     public PlayerModel(Point location, Size size, Image sprite) : base(location, size, sprite)
     {
+        HitPoints = (int)GameMemberHitPoints.Player;
+        BulletType = BulletTypes.MiddleBullet;
     }
 
     public void Shoot(Control.ControlCollection controls)
@@ -20,7 +22,7 @@ public class PlayerModel : GameObject, IGameMember
         {
             Location = PictureBox.Location with { X = playerHorizontalCenter },
             Size = BulletSize,
-            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + "bullet.png"))
+            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + "easyBullet.png"))
         };
 
         bullets.Add(newBullet);
@@ -66,12 +68,18 @@ public class PlayerModel : GameObject, IGameMember
     public void Die(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies = null,
         List<BonusModel> bonuses = null)
     {
-        LifeCount--;
+        if (HitPoints != 0)
+            HitPoints--;
+        else
+        {
+            LifeCount--;
+            HitPoints = (int)GameMemberHitPoints.Player;
 
-        Location = new Point(
-            MainForm.GetMainForm.ClientSize.Width / 2,
-            MainForm.GetMainForm.ClientSize.Height - PlayerSize.Height
-        );
+            Location = new Point(
+                MainForm.GetMainForm.ClientSize.Width / 2,
+                MainForm.GetMainForm.ClientSize.Height - PlayerSize.Height
+            );
+        }
     }
 
 
@@ -95,6 +103,7 @@ public class PlayerModel : GameObject, IGameMember
                 controls.Remove(bonuses[i].PictureBox);
                 bonuses.Remove(bonuses[i]);
                 LifeCount++;
+                Game.Score += 50;
             }
         }
 

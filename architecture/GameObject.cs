@@ -13,6 +13,8 @@ public abstract class GameObject
     public Point Location { get; set; }
     public Size Size { get; set; }
     public Image Image { get; set; }
+    public int HitPoints { get; set; }
+    public BulletTypes BulletType { get; set; }
     public PictureBox PictureBox { get; set; }
     public readonly List<PictureBox> bullets = new ();
 
