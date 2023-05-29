@@ -33,8 +33,8 @@ public partial class MainForm : Form
         #region PlayerState
 
         game.Player = new PlayerModel(
-            new Point(ClientSize.Width / 2, ClientSize.Height - GameObject.PlayerSize.Height),
-            GameObject.PlayerSize,
+            new Point(ClientSize.Width / 2, ClientSize.Height - Variables.PlayerSize.Height),
+            Variables.PlayerSize,
             Image.FromFile(Path.GetFullPath(PathToAssets + "player.png"))
         );
         

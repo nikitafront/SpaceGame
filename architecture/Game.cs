@@ -1,13 +1,13 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
 using Timer = System.Windows.Forms.Timer;
+using static SpaceGame.architecture.Variables;
 
 namespace SpaceGame.architecture;
 
 public class Game
 {
     public static Game GetCurrentGame { get; private set; }
-    private static long PassedMilliseconds { get; set; }
     public PlayerModel Player { get; set; }
     public static List<EnemyModel> EasyEnemies { get; set; } = new();
     public static List<EnemyModel> MiddleEnemies { get; set; } = new();
@@ -19,31 +19,8 @@ public class Game
     public static List<Control> MenuPauseControls { get; set; } = new();
     public Control.ControlCollection Controls { get; set; }
     public static long Score { get; set; }
-
-    #region Constants
     
-    public const int EasyEnemySpeed = 10;
-    public const long EasyEnemySpawnInterval = 8_000;
-    public const long EasyEnemyShootInterval = 2_000;
-
-    public const int MiddleEnemySpeed = 7;
-    public const long MiddleEnemySpawnInterval = 10_000;
-    public const long MiddleEnemyShootInterval = 4_000;
-    
-    public const int HardEnemySpeed = 5;
-    public const long HardEnemySpawnInterval = 12_000;
-    public const long HardEnemyShootInterval = 8_000;
-    
-    public const int BossSpeed = 2;
-    public const long BossSpawnInterval = 14_000;
-    public const long BossShootInterval = 6_000;
-
-    public const long PlayerShootInterval = 600;
-    public const int BulletSpeed = 20;
-    public const int BonusSpeed = 5;
-    public const long MovingInterval = 200;
-
-    #endregion
+    private const long MaximumCommonMultipleEnemySpawnInterval = 2_000;
 
     public Game()
     {
@@ -51,10 +28,10 @@ public class Game
         if (Variables.Timer == null)
         {
             Variables.Timer = new Timer { Enabled = true, Interval = 100 };
-            Variables.Timer.Tick += (o, e) =>
+            Variables.Timer.Tick += (_, _) =>
             {
                 PassedMilliseconds += 100;
-                ReDraw(o, e);
+                ReDraw();
             };
         }
 
@@ -65,7 +42,7 @@ public class Game
         };
     }
 
-    private async void ReDraw(object? sender, EventArgs args)
+    private void ReDraw()
     {
         if (PassedMilliseconds == 100)
             for (int i = 0; i < Player.LifeCount; i++)
@@ -89,88 +66,33 @@ public class Game
             }
         }
 
-        #region DRY
+        for (int i = 0; i < AllEnemies.Count; i++)
+        {
+            if (PassedMilliseconds % EnemySpeeds[i] == 0)
+                AllEnemies[i].ForEach(e => e.Move(Controls));
+            
+            if (PassedMilliseconds % EnemyShootIntervals[i] == 0)
+                AllEnemies
+                    .SelectMany(x => x)
+                    .Where(x => (int) x.EnemyType == i)
+                    .ToList()
+                    .ForEach(e => e.Shoot(Controls));
+        }
 
-        if (PassedMilliseconds % EasyEnemySpeed * 10 == 0) EasyEnemies.ForEach(e => e.Move(Controls));
-        if (PassedMilliseconds % MiddleEnemySpeed * 10 == 0) MiddleEnemies.ForEach(e => e.Move(Controls));
-        if (PassedMilliseconds % HardEnemySpeed * 10 == 0) HardEnemies.ForEach(e => e.Move(Controls));
-        if (PassedMilliseconds % BossSpeed * 10 == 0) Bosses.ForEach(e => e.Move(Controls));
+        if (PassedMilliseconds % PlayerShootInterval == 0) 
+            Player.Shoot(Controls);
 
-        #endregion
-
-        if (PassedMilliseconds % PlayerShootInterval == 0) Player.Shoot(Controls);
-
-        #region DRY
-
-        if (PassedMilliseconds % EasyEnemyShootInterval == 0)
-            AllEnemies
-                .SelectMany(x => x)
-                .Where(x => x.Type == GameMemberTypes.EasyEnemy)
-                .ToList()
-                .ForEach(e => e.Shoot(Controls));
-        
-        if (PassedMilliseconds % MiddleEnemyShootInterval == 0)
-            AllEnemies
-                .SelectMany(x => x)
-                .Where(x => x.Type == GameMemberTypes.MiddleEnemy)
-                .ToList()
-                .ForEach(e => e.Shoot(Controls));
-        
-        if (PassedMilliseconds % HardEnemyShootInterval == 0)
-            AllEnemies
-                .SelectMany(x => x)
-                .Where(x => x.Type == GameMemberTypes.HardEnemy)
-                .ToList()
-                .ForEach(e => e.Shoot(Controls));
-        
-        if (PassedMilliseconds % BossShootInterval == 0)
-            AllEnemies
-                .SelectMany(x => x)
-                .Where(x => x.Type == GameMemberTypes.Boss)
-                .ToList()
-                .ForEach(e => e.Shoot(Controls));
-
-        #endregion
-        
         if (PassedMilliseconds % BulletSpeed == 0)
         {
             Player.FlyBullets(Controls, AllEnemies, Bonuses);
             AllEnemies.ForEach(l => l.ForEach(e => e.FlyBullets(Controls)));
         }
 
-        if (PassedMilliseconds % BonusSpeed == 0) Bonuses.ForEach(b => b.Move(Controls));
+        if (PassedMilliseconds % BonusSpeed == 0) 
+            Bonuses.ForEach(b => b.Move(Controls));
 
-        #region DRY
-
-        if (PassedMilliseconds % EasyEnemySpawnInterval == 0)
-        {
-            var newEnemy = await SpawnEnemy(GameObject.EasyEnemySize, GameMemberTypes.EasyEnemy);
-            EasyEnemies.Add(newEnemy);
-            Controls.Add(newEnemy.PictureBox);
-        }
-        
-        if (PassedMilliseconds % MiddleEnemySpawnInterval == 0)
-        {
-            var newEnemy = await SpawnEnemy(GameObject.MiddleEnemySize, GameMemberTypes.MiddleEnemy);
-            EasyEnemies.Add(newEnemy);
-            Controls.Add(newEnemy.PictureBox);
-        }
-        
-        if (PassedMilliseconds % HardEnemySpawnInterval == 0)
-        {
-            var newEnemy = await SpawnEnemy(GameObject.MiddleEnemySize, GameMemberTypes.MiddleEnemy);
-            EasyEnemies.Add(newEnemy);
-            Controls.Add(newEnemy.PictureBox);
-        }
-        
-        if (PassedMilliseconds % BossSpawnInterval == 0)
-        {
-            var newEnemy = await SpawnEnemy(GameObject.BossSize, GameMemberTypes.Boss);
-            EasyEnemies.Add(newEnemy);
-            Controls.Add(newEnemy.PictureBox);
-        }
-        
-        #endregion
+        if (PassedMilliseconds % MaximumCommonMultipleEnemySpawnInterval == 0)
+            SpawnEnemy(PassedMilliseconds);
     }
 
     private void ChangeScoreText()
@@ -179,20 +101,44 @@ public class Game
         var template = $"Current score: {Score}\nBest score: {bestScore}";
         Controls.Find("ScoreText", true)[0].Text = template;
     }
-    
-    private Task<EnemyModel> SpawnEnemy(Size enemySize, GameMemberTypes enemyType)
+
+    private Task<EnemyModel> CreateEnemy(Size enemySize, GameMemberTypes enemyType)
     {
         var task = new Task<EnemyModel>(() =>
         {
             var newEnemyLocation =
-                new Point(new Random().Next(0, new MainForm().Size.Width - enemySize.Width),
-                    -enemySize.Height);
-            var newEnemy = new EnemyModel(newEnemyLocation, enemySize,
-                Image.FromFile(MainForm.PathToAssets + $"enemy{(int)enemyType}.png"), enemyType);
+                new Point(
+                    new Random().Next(0, new MainForm().Size.Width - enemySize.Width),
+                    -enemySize.Height
+                );
+            
+            var newEnemy =
+                new EnemyModel(
+                    newEnemyLocation,
+                    enemySize,
+                    Image.FromFile(MainForm.PathToAssets + $"enemy{(int)enemyType}.png"),
+                    enemyType
+                );
+            
             return newEnemy;
         });
         task.Start();
         return task;
+    }
+
+    private async void SpawnEnemy(long timerInterval)
+    {
+        var newEnemies = new List<EnemyModel>();
+        
+        for (int i = 0; i < AllEnemies.Count; i++)
+            if (timerInterval % EnemySpawnIntervals[i] == 0)
+            {
+                newEnemies.Add(await CreateEnemy(EnemySizes[i], Enum.GetValues<GameMemberTypes>()[i]));
+                AllEnemies[i].Add(newEnemies.Last());
+            }
+
+        if (newEnemies.Count != 0) 
+            newEnemies.ForEach(e => Controls.Add(e.PictureBox));
     }
 
     private void MoveToPauseMenu(Timer reDrawTimer)
@@ -298,7 +244,7 @@ public class Game
             new PictureBox
             {
                 Location = new Point(10 + 45 * (position % 10), 35 * (position / 10)),
-                Size = GameObject.HeartSize,
+                Size = HeartSize,
                 BackColor = Color.Transparent,
                 Image = Image.FromFile(MainForm.PathToAssets + "life.png")
             };

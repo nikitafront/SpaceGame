@@ -45,6 +45,16 @@ public class GameUnitTests
         new[] { 5, 5 },
         true
     )]
+    [TestCase(
+        new[]
+        {
+            0, 0, 1,
+            4, 4
+        },
+        new[] { 5, 5 },
+        new[] { 5, 5 },
+        true
+    )]
     
     [Test]
     public void MembersCross_Test(int[] locations, int[] widths, int[] heights, bool expected)

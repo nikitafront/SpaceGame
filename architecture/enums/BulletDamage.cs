@@ -1,6 +1,6 @@
 ﻿namespace SpaceGame;
 
-public enum BulletTypes
+public enum BulletsDamage
 {
     EasyBullet = 1,
     MiddleBullet = 4, 

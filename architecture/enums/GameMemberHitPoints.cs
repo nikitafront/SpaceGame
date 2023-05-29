@@ -2,9 +2,9 @@
 
 public enum GameMemberHitPoints
 {
-    EasyEnemy = 1,
+    EasyEnemy = 2,
     Player = 5,
-    MiddleEnemy = 5, 
-    HardEnemy = 20,
+    MiddleEnemy = 10, 
+    HardEnemy = 35,
     Boss = 500
 }

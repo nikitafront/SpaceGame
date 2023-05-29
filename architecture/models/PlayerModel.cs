@@ -1,18 +1,22 @@
 ﻿using SpaceGame.architecture;
 using SpaceGame.architecture.interfaces;
+using static SpaceGame.architecture.Variables;
 
 namespace SpaceGame;
 
 public class PlayerModel : GameObject, IGameMember
 {
     public Point TempLocation = Point.Empty;
-    public int LifeCount = 100;
-    public int BlinkCounter = 10;
+    public int LifeCount = 3;
+    private BulletsDamage _bulletDamage { get; set; }
+    private int _bulletIndex { get; set; }
+    private bool flag = false;
 
     public PlayerModel(Point location, Size size, Image sprite) : base(location, size, sprite)
     {
         HitPoints = (int)GameMemberHitPoints.Player;
-        BulletType = BulletTypes.MiddleBullet;
+        _bulletDamage = BulletsDamage.EasyBullet;
+        PictureBox.BackColor = Color.Transparent;
     }
 
     public void Shoot(Control.ControlCollection controls)
@@ -21,8 +25,10 @@ public class PlayerModel : GameObject, IGameMember
         var newBullet = new PictureBox
         {
             Location = PictureBox.Location with { X = playerHorizontalCenter },
-            Size = BulletSize,
-            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + "easyBullet.png"))
+            Size = BulletSizes[_bulletIndex],
+            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + $"bullet{_bulletIndex}.png")),
+            BackColor = Color.Black,
+            Tag = _bulletIndex
         };
 
         bullets.Add(newBullet);
@@ -38,7 +44,7 @@ public class PlayerModel : GameObject, IGameMember
         {
             var currenBullet = bullets[i];
 
-            currenBullet.Location = currenBullet.Location with { Y = currenBullet.Location.Y - Game.BulletSpeed };
+            currenBullet.Location = currenBullet.Location with { Y = currenBullet.Location.Y - BulletSpeed };
 
             if (currenBullet.Location.Y < -10)
             {
@@ -55,7 +61,7 @@ public class PlayerModel : GameObject, IGameMember
             bullets.Remove(currenBullet);
             controls.Remove(currenBullet);
 
-            enemiesToKill.ForEach(e => e.Die(controls, allEnemies, bonuses));
+            enemiesToKill.ForEach(e => e.Die(controls, allEnemies, bonuses, _bulletDamage));
         }
 
         foreach (var b in toRemove)
@@ -66,7 +72,8 @@ public class PlayerModel : GameObject, IGameMember
     }
 
     public void Die(Control.ControlCollection controls, List<List<EnemyModel>> allEnemies = null,
-        List<BonusModel> bonuses = null)
+        List<BonusModel> bonuses = null,
+        BulletsDamage damage = 0)
     {
         if (HitPoints != 0)
             HitPoints--;
@@ -94,17 +101,43 @@ public class PlayerModel : GameObject, IGameMember
     {
         if (LifeCount <= 0) return Game.GetCurrentGame.GameOver(controls);
 
+        Game.AllEnemies
+            .SelectMany(l => l)
+            .Where(IsCrossing)
+            .ToList()
+            .ForEach(e =>
+            {
+                e.Die(controls, Game.AllEnemies, Game.Bonuses, _bulletDamage); //for assured enemy kill 
+                Die(controls, Game.AllEnemies, Game.Bonuses, e.BulletType);
+            });
+
         Move(controls);
+
+        var bulletDamageValues = Enum.GetValues<BulletsDamage>();
 
         for (int i = 0; i < bonuses.Count; i++)
         {
-            if (IsCrossing(bonuses[i]))
+            if (!IsCrossing(bonuses[i])) continue;
+
+            if (bonuses[i].BonusType == BonusType.Heart) LifeCount++;
+            if (bonuses[i].BonusType == BonusType.Bullet)
             {
-                controls.Remove(bonuses[i].PictureBox);
-                bonuses.Remove(bonuses[i]);
-                LifeCount++;
-                Game.Score += 50;
+                var nextBulletIndex = Math.Min(
+                    bulletDamageValues.Length - 1,
+                    Array.IndexOf(bulletDamageValues, _bulletDamage) + 1
+                );
+
+                _bulletDamage = bulletDamageValues[nextBulletIndex];
+                _bulletIndex = nextBulletIndex;
+
+                if (ClearBulletBonusTimes.Count < 3)
+                    ClearBulletBonusTimes.Enqueue(PassedMilliseconds + ClearBulletBonusInterval);
             }
+
+            controls.Remove(bonuses[i].PictureBox);
+            bonuses.Remove(bonuses[i]);
+
+            Game.Score += 50;
         }
 
         if (Game
@@ -113,25 +146,29 @@ public class PlayerModel : GameObject, IGameMember
             .SelectMany(e => e.bullets)
             .Any(IsCrossing))
         {
-            BlinkCounter = 0;
             controls.Remove(Game.PlayerLifes.Last());
             Game.PlayerLifes.Remove(Game.PlayerLifes.Last());
             Die(controls);
         }
 
-        if (BlinkCounter < 10) Blink();
-        return false;
-    }
+        if (ClearBulletBonusTimes.Count != 0
+            && ClearBulletBonusTimes.Peek() <= PassedMilliseconds)
+        {
+            var previousBulletIndex = Math.Max(0, Array.IndexOf(bulletDamageValues, _bulletDamage) - 1);
 
-    private void Blink()
-    {
-        PictureBox.Visible = !PictureBox.Visible;
-        BlinkCounter++;
+            ClearBulletBonusTimes.Dequeue();
+            _bulletDamage = bulletDamageValues[previousBulletIndex];
+            _bulletIndex = previousBulletIndex;
+        }
+
+        // TODO add sound for player die
+        return false;
     }
 
     public void AppendTempLocation(Point temp)
     {
-        if (Location.Y + temp.Y <= 0 || Location.Y + PlayerSize.Height + temp.Y >= MainForm.GetMainForm.Size.Height
+        if (Location.Y + temp.Y <= 0 || Location.Y + PlayerSize.Height + temp.Y >=
+                                     MainForm.GetMainForm.Size.Height
                                      || Location.X + temp.X <= 0 || Location.X + PlayerSize.Width + temp.X >=
                                      MainForm.GetMainForm.Size.Width) return;
         TempLocation.Offset(temp);

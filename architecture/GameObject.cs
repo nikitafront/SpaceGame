@@ -2,20 +2,11 @@
 
 public abstract class GameObject
 {
-    public static readonly Size PlayerSize = new (80, 80);
-    public static readonly Size EasyEnemySize = new (60, 60);
-    public static readonly Size MiddleEnemySize = new (100, 100);
-    public static readonly Size HardEnemySize = new (120, 120);
-    public static readonly Size BossSize = new (200, 200);
-    public static readonly Size BonusSize = new (64, 64);
-    public static readonly Size BulletSize = new (4, 8);
-    public static readonly Size HeartSize = new (38, 33);
     public Point Location { get; set; }
-    public Size Size { get; set; }
-    public Image Image { get; set; }
+    public Size Size { get; }
+    public Image Image { get; }
     public int HitPoints { get; set; }
-    public BulletTypes BulletType { get; set; }
-    public PictureBox PictureBox { get; set; }
+    public PictureBox PictureBox { get; }
     public readonly List<PictureBox> bullets = new ();
 
     protected GameObject(
@@ -31,7 +22,8 @@ public abstract class GameObject
         {
             Location = location,
             Size = size,
-            Image = sprite
+            Image = sprite,
+            BackColor = Color.Black
         };
     }
 
