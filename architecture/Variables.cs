@@ -24,7 +24,7 @@ public static class Variables
         new (10, 16), 
         new (14, 22)
     };
-    public static readonly int[] EnemySpeeds = { 10, 5, 4, 2 };
+    public static readonly int[] EnemySpeeds = { 10, 4, 2, 1 };
     public static readonly int[] EnemySpawnIntervals = { 6_000, 14_000, 30_000, 50_000 };
     public static readonly int[] EnemyShootIntervals = { 2_000, 4_000, 6_000, 6_000 };
 
@@ -34,5 +34,9 @@ public static class Variables
     public static readonly int BonusSpeed = 5;
 
     public static readonly long ClearBulletBonusInterval = 12_000;
-    public static readonly Queue<long> ClearBulletBonusTimes = new Queue<long>();
+    public static readonly Queue<long> ClearBulletBonusTimes = new ();
+    
+    public static readonly string PathToAssets = Path.GetFullPath("..\\..\\..\\assets\\");
+    
+    public static readonly int MaximalBonusDropChance = 50;
 }

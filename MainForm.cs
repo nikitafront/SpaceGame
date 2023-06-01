@@ -1,21 +1,26 @@
+using System.ComponentModel;
+using System.Media;
 using SpaceGame.architecture;
+using static SpaceGame.architecture.Variables;
 
 namespace SpaceGame;
 
 public partial class MainForm : Form
 {
-    public static readonly string PathToAssets = Path.GetFullPath("..\\..\\..\\assets\\");
     public static Size MainFormSize { get; } = new Size(1240, 720);
     public static Size MenuButtonSize { get; } = new Size(180, 60);
     public static Form GetMainForm { get; set; }
-    public Label ScoreText { get; set; } 
+    private static Label ScoreText { get; set; }
     private readonly Random rnd = new();
+    private readonly BackgroundWorker worker = new ();
 
     public MainForm()
     {
+        var sp = new SoundPlayer(PathToAssets + "\\sounds\\main_theme.wav");
+        if (GetMainForm == null)
+            sp.Play();
+
         GetMainForm = this;
-        
-        var game = new Game { Controls = Controls };
 
         #region WindowState
 
@@ -30,36 +35,79 @@ public partial class MainForm : Form
 
         #endregion
 
-        #region PlayerState
+        var manualBonuses = new PictureBox
+        {
+            Location = new(0, 0),
+            Size = MainFormSize,
+            Image = Image.FromFile(PathToAssets + "manualBonuses.png")
+        };
 
-        game.Player = new PlayerModel(
-            new Point(ClientSize.Width / 2, ClientSize.Height - Variables.PlayerSize.Height),
-            Variables.PlayerSize,
-            Image.FromFile(Path.GetFullPath(PathToAssets + "player.png"))
-        );
-        
-        Controls.Add(game.Player.PictureBox);
+        var manualArrows = new PictureBox
+        {
+            Location = new(0, 0),
+            Size = MainFormSize,
+            Image = Image.FromFile(PathToAssets + "manualArrows.png")
+        };
 
-        #endregion
+        var manualMean = new PictureBox
+        {
+            Location = new(0, 0),
+            Size = MainFormSize,
 
-        #region PlayerMovingState
+            Image = Image.FromFile(PathToAssets + "manualMean.png")
+        };
 
-        KeyDown += (sender, args) =>
+        var manualPreview = new PictureBox
+        {
+            Location = new(0, 0),
+            Size = MainFormSize,
+            Image = Image.FromFile(PathToAssets + "manualPreview.png"),
+            BackColor = Color.FromArgb(255, 0, 0, 0)
+        };
+
+        Controls.Add(manualPreview);
+        Controls.Add(manualMean);
+        Controls.Add(manualArrows);
+        Controls.Add(manualBonuses);
+
+        foreach (Control control in Controls)
+            control.Click += (_, _) => Controls.Remove(control);
+
+        Controls[^1].Click += (_, _) =>
+        {
+            sp.Stop();
+            StartGame(this);
+        };
+    }
+
+    private void StartGame(Form form)
+    {
+        var game = new Game
+        {
+            Controls = form.Controls,
+            Player = new PlayerModel(
+                new Point(form.ClientSize.Width / 2, form.ClientSize.Height - Variables.PlayerSize.Height),
+                Variables.PlayerSize,
+                Image.FromFile(Path.GetFullPath(PathToAssets + "player.png"))
+            )
+        };
+
+        form.KeyDown += (_, args) =>
         {
             const int offsetValue = 50;
             switch (args.KeyCode)
             {
                 case Keys.Up:
-                    game.Player.AppendTempLocation(new (0, -offsetValue));
+                    game.Player.AppendTempLocation(new(0, -offsetValue));
                     break;
                 case Keys.Down:
-                    game.Player.AppendTempLocation(new (0, offsetValue));
+                    game.Player.AppendTempLocation(new(0, offsetValue));
                     break;
                 case Keys.Left:
-                    game.Player.AppendTempLocation(new (-offsetValue, 0));
+                    game.Player.AppendTempLocation(new(-offsetValue, 0));
                     break;
                 case Keys.Right:
-                    game.Player.AppendTempLocation(new (offsetValue, 0));
+                    game.Player.AppendTempLocation(new(offsetValue, 0));
                     break;
             }
         };
@@ -68,15 +116,14 @@ public partial class MainForm : Form
         {
             Name = "ScoreText",
             Size = new Size(500, 80),
-            Location = new Point(0, Size.Height - 100),
+            Location = new Point(0, form.Size.Height - 100),
             Text = "Current score:\nBest result:",
             Font = new Font(new FontFamily("ArcadeClassic"), 22),
             BackColor = Color.Transparent,
-            ForeColor = Color.DarkRed 
+            ForeColor = Color.DarkRed
         };
-        
-        Controls.Add(ScoreText);
 
-        #endregion
+        form.Controls.Add(game.Player.PictureBox);
+        form.Controls.Add(ScoreText);
     }
 }

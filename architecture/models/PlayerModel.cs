@@ -1,4 +1,6 @@
-﻿using SpaceGame.architecture;
+﻿using System.ComponentModel;
+using System.Media;
+using SpaceGame.architecture;
 using SpaceGame.architecture.interfaces;
 using static SpaceGame.architecture.Variables;
 
@@ -26,7 +28,7 @@ public class PlayerModel : GameObject, IGameMember
         {
             Location = PictureBox.Location with { X = playerHorizontalCenter },
             Size = BulletSizes[_bulletIndex],
-            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + $"bullet{_bulletIndex}.png")),
+            Image = Image.FromFile(Path.GetFullPath(PathToAssets + $"bullet{_bulletIndex}.png")),
             BackColor = Color.Black,
             Tag = _bulletIndex
         };
@@ -86,6 +88,10 @@ public class PlayerModel : GameObject, IGameMember
                 MainForm.GetMainForm.ClientSize.Width / 2,
                 MainForm.GetMainForm.ClientSize.Height - PlayerSize.Height
             );
+            
+            var worker = new BackgroundWorker();
+            worker.DoWork += (_, _) => new SoundPlayer(PathToAssets + "\\sounds\\enemy_die_sound.wav").Play();
+            worker.RunWorkerAsync();
         }
     }
 
@@ -118,6 +124,10 @@ public class PlayerModel : GameObject, IGameMember
         for (int i = 0; i < bonuses.Count; i++)
         {
             if (!IsCrossing(bonuses[i])) continue;
+            
+            var worker = new BackgroundWorker();
+            worker.DoWork += (_, _) => new SoundPlayer(PathToAssets + "\\sounds\\bonus_sound.wav").Play();
+            worker.RunWorkerAsync();
 
             if (bonuses[i].BonusType == BonusType.Heart) LifeCount++;
             if (bonuses[i].BonusType == BonusType.Bullet)
@@ -138,6 +148,8 @@ public class PlayerModel : GameObject, IGameMember
             bonuses.Remove(bonuses[i]);
 
             Game.Score += 50;
+            
+            PlaySound("bonus_sound.wav");
         }
 
         if (Game

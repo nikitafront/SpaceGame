@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Media;
 using SpaceGame.architecture;
 using SpaceGame.architecture.interfaces;
 using static SpaceGame.architecture.Variables;
@@ -34,7 +35,7 @@ public class EnemyModel : GameObject, IGameMember
             default: throw new InvalidEnumArgumentException(nameof(enemyType), (int)enemyType, typeof(GameMemberTypes));
         }
     }
-
+    
     public EnemyModel(PictureBox pictureBox) : base(pictureBox)
     {
     }
@@ -46,7 +47,7 @@ public class EnemyModel : GameObject, IGameMember
         {
             Location = PictureBox.Location with { X = enemyHorizontalCenter },
             Size = BulletSizes[(int)EnemyType],
-            Image = Image.FromFile(Path.GetFullPath(MainForm.PathToAssets + $"bullet{(int)EnemyType}.png")),
+            Image = Image.FromFile(Path.GetFullPath(PathToAssets + $"bullet{(int)EnemyType}.png")),
             BackColor = Color.Black
         };
         if (EnemyType == GameMemberTypes.Boss) newBullet.Image.RotateFlip(RotateFlipType.Rotate180FlipNone);
@@ -85,18 +86,18 @@ public class EnemyModel : GameObject, IGameMember
         PictureBox.Location = Location;
     }
 
-    public void Die(
-        Control.ControlCollection controls, 
-        List<List<EnemyModel>> allEnemies, 
-        List<BonusModel> bonuses, 
+    public void Die(Control.ControlCollection controls,
+        List<List<EnemyModel>> allEnemies,
+        List<BonusModel> bonuses = null,
         BulletsDamage damage = 0)
     {
-        if (HitPoints >= (int) damage + 1)
-        {
-            HitPoints -= (int) damage;
-        }
+        if (HitPoints > (int) damage) HitPoints -= (int) damage;
         else
         {
+            var worker = new BackgroundWorker();
+            worker.DoWork += (_, _) => new SoundPlayer(PathToAssets + "\\sounds\\enemy_die_sound.wav").Play();
+            worker.RunWorkerAsync();
+            
             controls.Remove(PictureBox);
             bullets.ForEach(controls.Remove);
             allEnemies.Any(i => i.Remove(this));
@@ -118,20 +119,17 @@ public class EnemyModel : GameObject, IGameMember
             }
 
             var rndInt = new Random().Next(0, 100);
-            const int heartDropChance = -1;
-            const int bulletDropChance = 100; //TODO change to 10\30 (now is dev version)
 
-            var newBonuses = new List<BonusModel>();
+            if (rndInt <= MaximalBonusDropChance)
+            {
+                MainForm.GetMainForm.Text = rndInt.ToString();
+                var newBonus = new BonusModel(Location, BonusSize, rndInt);
 
-            if (rndInt <= heartDropChance)
-                newBonuses.Add(new BonusModel(Location, BonusSize,
-                    Image.FromFile(MainForm.PathToAssets + "bonusHeart.png"), BonusType.Heart));
-            else if (rndInt <= bulletDropChance)
-                newBonuses.Add(new BonusModel(Location, BonusSize,
-                    Image.FromFile(MainForm.PathToAssets + "bonusBullet.png"), BonusType.Bullet));
-            
-            bonuses.AddRange(newBonuses);
-            newBonuses.ForEach(b => controls.Add(b.PictureBox));
+                bonuses.Add(newBonus);
+                controls.Add(newBonus.PictureBox);
+            }
+
+            PlaySound("enemy_die_sound.wav");
         }
     }
 }

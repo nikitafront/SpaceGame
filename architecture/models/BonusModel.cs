@@ -6,10 +6,21 @@ public class BonusModel : GameObject
 {
     public BonusType BonusType { get; }
 
-    public BonusModel(Point location, Size size, Image image, BonusType bonusType) : base(location, size, image)
+    public BonusModel(Point location, Size size, int rndInt) : base(location, size, null)
     {
-        BonusType = bonusType;
         PictureBox.BackColor = Color.Transparent;
+        
+        const int heartDropChance = 1;
+        const int bulletDropChance = 45;
+
+        if (rndInt <= heartDropChance)
+            BonusType = BonusType.Heart;
+        else if (rndInt <= bulletDropChance)
+            BonusType = BonusType.Bullet;
+        
+        Image = Image.FromFile(Variables.PathToAssets + $"bonus{(BonusType == BonusType.Bullet ? "Bullet" : "Heart")}.png");
+        PictureBox.Image = Image;
+
     }
     
     public override void Move(Control.ControlCollection controls)

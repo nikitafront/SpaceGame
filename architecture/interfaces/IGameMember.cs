@@ -7,9 +7,8 @@ public interface IGameMember
         Control.ControlCollection controls, 
         List<List<EnemyModel>> allEnemies, 
         List<BonusModel> bonuses = null);
-    public void Die(
-        Control.ControlCollection controls, 
-        List<List<EnemyModel>> allEnemies = null, 
-        List<BonusModel> bonuses = null, 
+    public void Die(Control.ControlCollection controls,
+        List<List<EnemyModel>> allEnemies = null,
+        List<BonusModel> bonuses = null,
         BulletsDamage damage = 0);
 }

@@ -8,11 +8,13 @@
         <UseWindowsForms>true</UseWindowsForms>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>default</LangVersion>
+        <ApplicationIcon>assets\icon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
       <PackageReference Include="NUnit" Version="3.13.3" />
+      <PackageReference Include="Plugin.Maui.Audio" Version="1.0.0" />
     </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using System.Media;
 using Timer = System.Windows.Forms.Timer;
 using static SpaceGame.architecture.Variables;
 
@@ -97,7 +98,7 @@ public class Game
 
     private void ChangeScoreText()
     {
-        var bestScore = File.ReadAllText(MainForm.PathToAssets + "bestPlayerResult.txt");
+        var bestScore = File.ReadAllText(PathToAssets + "bestPlayerResult.txt");
         var template = $"Current score: {Score}\nBest score: {bestScore}";
         Controls.Find("ScoreText", true)[0].Text = template;
     }
@@ -116,7 +117,7 @@ public class Game
                 new EnemyModel(
                     newEnemyLocation,
                     enemySize,
-                    Image.FromFile(MainForm.PathToAssets + $"enemy{(int)enemyType}.png"),
+                    Image.FromFile(PathToAssets + $"enemy{(int)enemyType}.png"),
                     enemyType
                 );
             
@@ -147,7 +148,7 @@ public class Game
         {
             var background = new PictureBox
             {
-                Image = Image.FromFile(MainForm.PathToAssets + "pauseBlackout.png"),
+                Image = Image.FromFile(PathToAssets + "pauseBlackout.png"),
                 Size = MainForm.MainFormSize,
                 Location = new Point(0, 0),
                 BackColor = Color.Transparent
@@ -155,7 +156,7 @@ public class Game
 
             var buttonResume = new Button
             {
-                Image = Image.FromFile(MainForm.PathToAssets + "pauseMenuButton.png"),
+                Image = Image.FromFile(PathToAssets + "pauseMenuButton.png"),
                 Size = MainForm.MenuButtonSize,
                 Text = "Продолжить игру",
                 ForeColor = Color.White,
@@ -174,7 +175,7 @@ public class Game
 
             var buttonExit = new Button
             {
-                Image = Image.FromFile(MainForm.PathToAssets + "pauseMenuButton.png"),
+                Image = Image.FromFile(PathToAssets + "pauseMenuButton.png"),
                 Size = MainForm.MenuButtonSize,
                 Text = "Выйти из игры",
                 ForeColor = Color.White,
@@ -193,9 +194,9 @@ public class Game
                 if (c.GetType() != typeof(Button)) return;
                 c.Font = new Font(c.Font.FontFamily, 12);
                 c.MouseEnter += (_, _) =>
-                    ((Button)c).Image = Image.FromFile(MainForm.PathToAssets + "pauseMenuButton-hovered.png");
+                    ((Button)c).Image = Image.FromFile(PathToAssets + "pauseMenuButton-hovered.png");
                 c.MouseLeave += (_, _) =>
-                    ((Button)c).Image = Image.FromFile(MainForm.PathToAssets + "pauseMenuButton.png");
+                    ((Button)c).Image = Image.FromFile(PathToAssets + "pauseMenuButton.png");
             });
         }
 
@@ -214,9 +215,9 @@ public class Game
 
     public bool GameOver(Control.ControlCollection controls)
     {
-        var bestResult = long.Parse(File.ReadAllText(MainForm.PathToAssets + "bestPlayerResult.txt"));
+        var bestResult = long.Parse(File.ReadAllText(PathToAssets + "bestPlayerResult.txt"));
         File.WriteAllText(
-            MainForm.PathToAssets + "bestPlayerResult.txt",
+            PathToAssets + "bestPlayerResult.txt",
             Math.Max(Score, bestResult).ToString()
         );
 
@@ -226,7 +227,7 @@ public class Game
         {
             Location = new Point(0, 0),
             Size = MainForm.MainFormSize,
-            Image = Image.FromFile(MainForm.PathToAssets + "gameOver.png"),
+            Image = Image.FromFile(PathToAssets + "gameOver.png"),
             BackColor = Color.Transparent
         };
         gameOverPicture.Click += (sender, args) => Application.Exit();
@@ -246,7 +247,7 @@ public class Game
                 Location = new Point(10 + 45 * (position % 10), 35 * (position / 10)),
                 Size = HeartSize,
                 BackColor = Color.Transparent,
-                Image = Image.FromFile(MainForm.PathToAssets + "life.png")
+                Image = Image.FromFile(PathToAssets + "life.png")
             };
 
         Controls.Add(life);

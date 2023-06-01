@@ -1,13 +1,19 @@
-﻿namespace SpaceGame;
+﻿using System.Media;
+using Microsoft.VisualBasic;
+using Plugin.Maui.Audio;
+using SpaceGame.architecture;
+
+namespace SpaceGame;
 
 public abstract class GameObject
 {
     public Point Location { get; set; }
     public Size Size { get; }
-    public Image Image { get; }
+    public Image Image { get; set; }
     public int HitPoints { get; set; }
     public PictureBox PictureBox { get; }
     public readonly List<PictureBox> bullets = new ();
+    private static SoundPlayer _soundPlayer = new ();
 
     protected GameObject(
         Point location,
@@ -42,4 +48,14 @@ public abstract class GameObject
 
     public bool IsCrossing(List<GameObject> members)
         => members.Any(m => IsCrossing(m.PictureBox));
+
+    public static void PlaySound(string soundName)
+    {
+        new Thread(() =>
+        { 
+            _soundPlayer = new SoundPlayer(Variables.PathToAssets + $"sounds\\{soundName}");
+            _soundPlayer.LoadAsync();
+            _soundPlayer.PlaySync();
+        }).Start();
+    }
 }
